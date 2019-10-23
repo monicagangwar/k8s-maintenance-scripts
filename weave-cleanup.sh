@@ -1,4 +1,15 @@
 #!/bin/bash
+
+# Generally as nodes come up and go down, weave allocates/deallocates pod cidrs to them.
+# Due to some race condition sometimes weave db gets corrupted with incosistent
+# ip addresses allocated to some nodes.
+# This causes pods to go into ContainerCreating phase as k8s is unable to allocate ip
+# address to them hence weave needs to be manually corrected.
+# For this weave db needs to be manually removed, restarting the pod does not work as
+# weave pods mount /var/lib/weave/weave-netdata.db on host and data is persisted.
+# This script removes the weave db and restarts weave pod causing db to be created again
+# with data taken up from annotation in weave configmap persisted in k8s itself.
+
 echo Starting NODES cleanup ...
 kubectl get nodes -o json | jq -cr .items[].metadata.name | while read node
 do
